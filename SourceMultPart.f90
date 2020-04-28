@@ -11,7 +11,6 @@ program MonteKarlo
     !Параметры симуляции
     integer NumberOfParticles
     real, parameter :: MaxT = 100.0 !Время в у.е. в течение которого проводится симуляция.
-    real, parameter :: dt = 0.1
     !Счётчики.
     integer i, j
     !Создание типа ЧАСТИЦА.
@@ -22,75 +21,59 @@ program MonteKarlo
         real(16) vx !Направляющие косинусы.
         real(16) vy
         real(16) vz
-        real(16) time2strike
     end type particle
     type(particle) part
     !Вспомогательные.
-    integer numb_of_part_least_time
-    integer(8) count
-    type(particle), allocatable :: Particles(:)
     real l, temp, angle
-    real(16) least_time_int
-    real(16) sum_diff, sum_dist
+    real(16) sum_diff
+    real dt
     !Нужно для получения случаных чисел.
     call RANDOM_SEED()
-    !Массив частиц
-    allocate(Particles(500))
-    !Начальные данные частиц.
     !Начальные параметры системы
-    D = av_t * 1.0 / 3.0
+    D = av_t * 1.0 / 3.0    !!!Так как скорость частицы численно равно единице, то время пробега расстояния l численно равно этому расстоянию!!!
     !Создание графического окна и прорисовка в нём окна с графиком.
     call GraphicWindow()
     call GraphicAxes()
     !Открываем файл для записи необходимых данных.
     open(1, file= "out.txt")
-    !Так как скорость частицы численно равно единице, то время пробега расстояния l численно равно этому расстоянию.
-    !Симуляция движуния Number0fParticles частиц в случае трёхмерного  движения.
     
-    logic = SetColor(4);
-    call MoveTo_w(DBLE(0.0), DBLE(0.0), wxy)
-
-do NumberOfParticles=1,250
-    do i = 1,NumberOfParticles
-        Particles(i).x = 0.0; Particles(i).y = 0.0; Particles(i).z = 0.0;
+logic = SetColor(4);
+call MoveTo_w(DBLE(0.0), DBLE(0.0), wxy)
+do NumberOfParticles=1,500
+    call RANDOM_SEED()
+    !Считаем отклонения модели от теории для каждой частицы из K частиц.
+    sum_diff = 0
+    do i=1,NumberOfParticles
+        !Считаем дистанцию, которую i-ая частица прошло за время Tmax.
+        t = 0
+        !Начальное состояние этой частицы.
+        part.x = 0.0; part.y = 0.0; part.z = 0.0;
         call RANDOM_NUMBER(angle)
         angle = angle * pi * 2.0
-        Particles(i).vx = cos(angle); Particles(i).vy = sin(angle); Particles(i).vz = 0.0;
-        Particles(i).time2strike = Get_Random_Time2Strike()
-    end do
-    sum_diff = 0; count = 0
-    t = 0
-    do while (t < MaxT)
-        sum_dist = 0
-        least_time_int = MaxT
-        numb_of_part_least_time = 0
-        do j=1,NumberOfParticles
-            if (Particles(j).time2strike < least_time_int) then
-                least_time_int = Particles(j).time2strike
-                numb_of_part_least_time = j
+        part.vx = cos(angle); part.vy = sin(angle); part.vz = 0.0;
+        !Считаем дистанцию, на которая одалится от начала координат i-ая частица за время MaxT.
+        do while (t < MaxT)
+            dt = Get_Random_Time2Strike()
+            if (t + dt < MaxT) then
+                part.x = part.x + part.vx * dt
+                part.y = part.y + part.vy * dt
+                part.z = part.z + part.vz * dt
+                part = ConvertPart( part, Get_Random_CosTetha(), Get_Random_Phi() )
+            else
+                dt = (MaxT - t)
+                part.x = part.x + part.vx * dt
+                part.y = part.y + part.vy * dt
+                part.z = part.z + part.vz * dt
             end if
+            t = t + dt
         end do
-        do j=1,NumberOfParticles
-            Particles(j).x = Particles(j).x + Particles(j).vx * least_time_int
-            Particles(j).y = Particles(j).y + Particles(j).vy * least_time_int
-            Particles(j).z = Particles(j).z + Particles(j).vz * least_time_int
-            Particles(j).time2strike = Particles(j).time2strike - least_time_int
-            if (j == numb_of_part_least_time) then
-                Particles(j).time2strike = Get_Random_Time2Strike()
-                Particles(j) = ConvertPart( Particles(j), Get_Random_CosTetha(), Get_Random_Phi() )
-            end if
-        end do
-        do j=1,NumberOfParticles
-            sum_dist = sum_dist + sqrt( (Particles(j).x)**2 + (Particles(j).y)**2 + (Particles(j).z)**2 )
-        end do
-        t = t + least_time_int
-        if(t > MaxT / 2.0) then
-            sum_diff = sum_diff + abs( sum_dist / DBLE(NumberOfParticles) - sqrt(5*D*t) )
-            count = count + 1
-        end if
+        !Считаем сумму отклонений по всем K частицам.
+        sum_diff = sum_diff + abs( sqrt( (part.x)**2 + (part.y)**2 + (part.z)**2 ) - sqrt(6*D*MaxT))
     end do
-    logic = LineTo_w( DBLE(NumberOfParticles), DBLE(sum_diff / DBLE(count) ) )
-    write(1,*) NumberOfParticles, " ", sum_diff / DBLE(count)
+    !Считаем среднее.
+    sum_diff = DBLE(sum_diff) / DBLE(NumberOfParticles)
+    !Строим соответствующую точку на графике.
+    logic = LineTo_w( DBLE(NumberOfParticles), DBLE(sum_diff) )
 end do
 
     close(1)
@@ -122,7 +105,6 @@ end do
         ConvertPart.vx = cos_tetha * old_part.vx - ( old_part.vy * sin(phi) - old_part.vx * old_part.vz * cos(phi) ) * sqrt ( (1 - (cos_tetha)**2) / (1 - (old_part.vz)**2) )
         ConvertPart.vy = cos_tetha * old_part.vy + ( old_part.vx * sin(phi) + old_part.vy * old_part.vz * cos(phi) ) * sqrt ( (1 - (cos_tetha)**2) / (1 - (old_part.vz)**2) )
         ConvertPart.vz = cos_tetha * old_part.vz - ( 1 - (old_part.vz)**2 ) * cos(phi) * sqrt ( (1 - (cos_tetha)**2) / (1 - (old_part.vz)**2) )
-        ConvertPart.time2strike = old_part.time2strike
     end function ConvertPart
     
     subroutine GraphicWindow() !Создаёт окно для вывода графики. фон - белый, граница - чёрная, само окно - белое.
@@ -138,7 +120,7 @@ end do
     subroutine GraphicAxes()
         real xl, yl, xr, yr, scale_width
         real x, y
-        xl = -0.1; yl = -0.1; xr = 250; yr = 5.0; scale_width = 0.1 !Обязательно должны содержать начало координат.
+        xl = -0.1; yl = -0.1; xr = 500; yr = 10.0; scale_width = 0.1 !Обязательно должны содержать начало координат.
         bool2 = SetWindow(.TRUE., DBLE(xl), DBLE(yl), DBLE(xr), DBLE(yr))
         x = xl
         do while (ceiling(x) <= floor(xr)) !Градуировка шкалы абсцисс.
