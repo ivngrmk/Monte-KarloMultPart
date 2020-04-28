@@ -43,16 +43,14 @@ call MoveTo_w(DBLE(0.0), DBLE(0.0), wxy)
 do NumberOfParticles=1,300
     call RANDOM_SEED()
     !Считаем отклонения модели от теории для каждой частицы из K частиц.
-    sum_diff = 0
+    SUM_DIFF_K = 0
     do i=1,NumberOfParticles
-        SUM_DIFF_K = 0
+        sum_diff = 0
         !Считаем дистанцию, которую i-ая частица прошло за время Tmax.
         t = 0
         !Начальное состояние этой частицы.
         part.x = 0.0; part.y = 0.0; part.z = 0.0;
-        call RANDOM_NUMBER(angle)
-        angle = angle * pi * 2.0
-        part.vx = cos(angle); part.vy = sin(angle); part.vz = 0.0;
+        part.vx = 1.0; part.vy = 0.0; part.vz = 0.0;
         !Считаем дистанцию, на которая одалится от начала координат i-ая частица за время MaxT.
         do while (t < MaxT)
             dt = Get_Random_Time2Strike()
@@ -68,16 +66,14 @@ do NumberOfParticles=1,300
                 part.z = part.z + part.vz * dt
             end if
             t = t + dt
-            sum_diff = sum_diff + abs( sqrt( (part.x)**2 + (part.y)**2 + (part.z)**2 ) - sqrt(6*D*MaxT)) * dt
         end do
-        sum_diff = sum_diff / MaxT
-        SUM_DIFF_K = SUM_DIFF_K + DBLE(sum_diff)
+        sum_diff = sum_diff + abs( sqrt( (part.x)**2 + (part.y)**2 + (part.z)**2 ))
     end do
     !Считаем среднее.
-    SUM_DIFF_K = SUM_DIFF_K / DBLE(NumberOfParticles)
+    sum_diff = abs(sum_diff / DBLE(NumberOfParticles) - DBLE(sqrt(6*D*MaxT)))
     !Строим соответствующую точку на графике.
-    logic = LineTo_w( DBLE(NumberOfParticles), DBLE(SUM_DIFF_K) )
-    write(1,*) sqrt(DBLE(NumberOfParticles)), " ", SUM_DIFF_K
+    logic = LineTo_w( DBLE(NumberOfParticles), DBLE(sum_diff) )
+    write(1,*) (DBLE(NumberOfParticles)), " ", sum_diff
 end do
 
     close(1)
@@ -124,7 +120,7 @@ end do
     subroutine GraphicAxes()
         real xl, yl, xr, yr, scale_width
         real x, y
-        xl = -0.1; yl = -0.1; xr = 300; yr = 8.0; scale_width = 0.1 !Обязательно должны содержать начало координат.
+        xl = -0.1; yl = -0.1; xr = 300; yr = 100.0; scale_width = 0.1 !Обязательно должны содержать начало координат.
         bool2 = SetWindow(.TRUE., DBLE(xl), DBLE(yl), DBLE(xr), DBLE(yr))
         x = xl
         do while (ceiling(x) <= floor(xr)) !Градуировка шкалы абсцисс.
