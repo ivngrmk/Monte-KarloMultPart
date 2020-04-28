@@ -10,7 +10,7 @@ program MonteKarlo
     real D !Коэффициент диффуции
     !Параметры симуляции
     integer NumberOfParticles
-    real, parameter :: MaxT = 100.0 !Время в у.е. в течение которого проводится симуляция.
+    real, parameter :: MaxT = 1000.0 !Время в у.е. в течение которого проводится симуляция.
     !Счётчики.
     integer i, j
     !Создание типа ЧАСТИЦА.
@@ -26,6 +26,7 @@ program MonteKarlo
     !Вспомогательные.
     real l, temp, angle
     real(16) sum_diff
+    real(16) SUM_DIFF_K
     real dt
     !Нужно для получения случаных чисел.
     call RANDOM_SEED()
@@ -39,11 +40,12 @@ program MonteKarlo
     
 logic = SetColor(4);
 call MoveTo_w(DBLE(0.0), DBLE(0.0), wxy)
-do NumberOfParticles=1,500
+do NumberOfParticles=1,300
     call RANDOM_SEED()
     !Считаем отклонения модели от теории для каждой частицы из K частиц.
     sum_diff = 0
     do i=1,NumberOfParticles
+        SUM_DIFF_K = 0
         !Считаем дистанцию, которую i-ая частица прошло за время Tmax.
         t = 0
         !Начальное состояние этой частицы.
@@ -66,14 +68,16 @@ do NumberOfParticles=1,500
                 part.z = part.z + part.vz * dt
             end if
             t = t + dt
+            sum_diff = sum_diff + abs( sqrt( (part.x)**2 + (part.y)**2 + (part.z)**2 ) - sqrt(6*D*MaxT)) * dt
         end do
-        !Считаем сумму отклонений по всем K частицам.
-        sum_diff = sum_diff + abs( sqrt( (part.x)**2 + (part.y)**2 + (part.z)**2 ) - sqrt(6*D*MaxT))
+        sum_diff = sum_diff / MaxT
+        SUM_DIFF_K = SUM_DIFF_K + DBLE(sum_diff)
     end do
     !Считаем среднее.
-    sum_diff = DBLE(sum_diff) / DBLE(NumberOfParticles)
+    SUM_DIFF_K = SUM_DIFF_K / DBLE(NumberOfParticles)
     !Строим соответствующую точку на графике.
-    logic = LineTo_w( DBLE(NumberOfParticles), DBLE(sum_diff) )
+    logic = LineTo_w( DBLE(NumberOfParticles), DBLE(SUM_DIFF_K) )
+    write(1,*) sqrt(DBLE(NumberOfParticles)), " ", SUM_DIFF_K
 end do
 
     close(1)
@@ -120,7 +124,7 @@ end do
     subroutine GraphicAxes()
         real xl, yl, xr, yr, scale_width
         real x, y
-        xl = -0.1; yl = -0.1; xr = 500; yr = 10.0; scale_width = 0.1 !Обязательно должны содержать начало координат.
+        xl = -0.1; yl = -0.1; xr = 300; yr = 8.0; scale_width = 0.1 !Обязательно должны содержать начало координат.
         bool2 = SetWindow(.TRUE., DBLE(xl), DBLE(yl), DBLE(xr), DBLE(yr))
         x = xl
         do while (ceiling(x) <= floor(xr)) !Градуировка шкалы абсцисс.
