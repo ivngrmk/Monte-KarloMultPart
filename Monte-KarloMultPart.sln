@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29102.190
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "Monte-KarloMultPart", "Monte-KarloMultPart.vfproj", "{0AFC29A6-2B0C-4EDE-A623-09A8A6C78734}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0AFC29A6-2B0C-4EDE-A623-09A8A6C78734}.Debug|x86.ActiveCfg = Debug|Win32
+		{0AFC29A6-2B0C-4EDE-A623-09A8A6C78734}.Debug|x86.Build.0 = Debug|Win32
+		{0AFC29A6-2B0C-4EDE-A623-09A8A6C78734}.Release|x86.ActiveCfg = Release|Win32
+		{0AFC29A6-2B0C-4EDE-A623-09A8A6C78734}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C9D91AB1-CB78-47C4-89D4-08EB0C01527F}
+	EndGlobalSection
+EndGlobal
